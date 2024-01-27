@@ -1,0 +1,48 @@
+#docker compose -f ./docker/docker-compose.coder.yml up
+#docker compose -f ./docker/docker-compose.coder.yml down -v --remove-orphans
+version: '3.7'
+
+services:
+    redis:
+        image: redis:latest
+        restart: always
+        command:
+            - /bin/sh
+            - -c
+            - redis-server --save 20 1 --loglevel warning --requirepass "$${REDIS_ROOT_PASSWORD:?REDIS_ROOT_PASSWORD variable is not set}"
+        volumes:
+            - type: bind
+              source: ./cache
+              target: /data
+        env_file:
+            - '.env'
+        networks:
+            - backend
+        ports:
+            - 6379:6379
+
+    mariadb:
+        image: mariadb:latest
+        container_name: mariadb_fans
+        volumes:
+            - type: bind
+              source: ./db
+              target: /var/lib/mysql
+        env_file:
+            - '.env'
+        networks:
+            - backend
+        ports:
+            - 3306:3306
+
+    adminer:
+        image: adminer:latest
+        container_name: adminer
+        restart: unless-stopped
+        networks:
+            - backend
+        ports:
+            - 8090:8080
+
+networks:
+    backend:
