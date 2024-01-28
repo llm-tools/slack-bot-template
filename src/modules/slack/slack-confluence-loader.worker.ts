@@ -16,18 +16,33 @@ export class SlackConfluenceLoaderWorker {
 
     @Process()
     async process(job: Job<ConfluenceLoaderCommand>): Promise<any> {
-        this.logger.debug(`Processing slack confluence load for space '${job.data.space}'`);
+        const spaces = job.data.spaces.join(', ');
+        this.logger.debug(`Processing slack confluence load for spaces '${spaces}'`);
 
-        const llmResponse = await this.llmService.addConfluenceEmbedding([job.data.space]);
-        this.logger.debug(
-            `Finished adding ${llmResponse.newEntriesAdded} entries from confluence space '${job.data.space}'`,
-        );
+        let newEntriesAdded = 0;
+        let slackMessage = `Finished processing confluence spaces `;
+        for (const space of job.data.spaces) {
+            try {
+                this.logger.debug(`Adding confluence space '${space}'`);
+                const llmResponse = await this.llmService.addConfluenceEmbedding([space]);
+                this.logger.debug(`Finished adding confluence space '${space}'`);
+
+                newEntriesAdded += llmResponse.newEntriesAdded;
+                slackMessage += `\`${space}\`, `;
+            } catch (e) {
+                this.logger.error(`Error adding confluence space '${space}'`, e);
+            }
+        }
+
+        slackMessage = slackMessage.slice(0, -2);
+        slackMessage += `. Total new entries added \`${newEntriesAdded}\`.`;
+        this.logger.debug(slackMessage);
 
         await axios.post(job.data.responseUrl, {
-            text: `Added \`${llmResponse.newEntriesAdded}\` entries from confluence space \`${job.data.space}\` to knowledge bank`,
+            text: slackMessage,
             response_type: 'in_channel',
         });
 
-        this.logger.debug(`Finished processing slack confluence space '${job.data.space}'`);
+        this.logger.debug(`Finished processing slack confluence load for spaces '${spaces}'`);
     }
 }

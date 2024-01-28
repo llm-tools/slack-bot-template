@@ -68,11 +68,12 @@ export class SlackService {
 
         switch (command) {
             case 'confluence':
-                this.slackConfluenceLoaderQueue.add({ space: parameter, responseUrl });
-                return `Learning from confluence space \`${parameter}\` queued`;
+                const spaces = parameter.split(',');
+                this.slackConfluenceLoaderQueue.add({ spaces, responseUrl });
+                return `Learning from confluence spaces queued`;
             case 'web':
                 this.slackWebLoaderQueue.add({ url: parameter, responseUrl });
-                return `Learning from web url \`${parameter}\` queued`;
+                return `Learning from web url queued`;
             default:
                 return `Unknown loader \`${command}\``;
         }
