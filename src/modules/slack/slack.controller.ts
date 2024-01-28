@@ -2,11 +2,11 @@ import { Body, Controller, Headers, Post, RawBodyRequest, Req, UnauthorizedExcep
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { SlackService } from './slack.service.js';
-import { EmbeddingAddedResponse } from './models/embedding-added-response.model.js';
-import { AddConfluenceEmbeddingRequest } from './models/add-confluence-embedding-request.model.js';
 import { SlackEventRequest, VerifyEndpointRequest } from './models/slack-event-request.model.js';
-import { ChatResponse } from './models/chat-response.model.js';
-import { ChatRequest } from './models/chat-request.model.js';
+import { SlackCommandRequest } from './models/slack-command-request.model.js';
+import { SlackCommandResponse } from './models/slack-command-response.model.js';
+import { SlackEventResponse } from './models/slack-event-response.model.js';
+import { SlackVerifyResponse } from './models/slack-verify-response.model.js';
 
 @ApiTags('Slack')
 @Controller('slack')
@@ -14,12 +14,15 @@ export class SlackController {
     constructor(private readonly slackService: SlackService) {}
 
     @Post('/event')
+    @ApiOkResponse({
+        type: SlackEventResponse || SlackVerifyResponse,
+    })
     async event(
         @Headers('x-slack-signature') slackSignature: string,
         @Headers('x-slack-request-timestamp') slackRequestTimestamp: string,
         @Body() body: VerifyEndpointRequest | SlackEventRequest,
         @Req() req: RawBodyRequest<Request>,
-    ): Promise<any> {
+    ): Promise<SlackEventResponse | SlackVerifyResponse> {
         if (!(await this.slackService.isTokenValid(slackSignature, slackRequestTimestamp, req.rawBody))) {
             throw new UnauthorizedException('Invalid Slack Token');
         }
@@ -30,13 +33,13 @@ export class SlackController {
             case 'event_callback':
                 switch (body.event.type) {
                     case 'app_mention':
-                        await this.slackService.slackMention(
+                        const eventId = await this.slackService.slackMention(
                             body.event.text,
                             body.event.thread_ts ?? body.event.ts,
                             body.event.channel,
                         );
 
-                        return { processed: true };
+                        return { processed: true, eventId };
                 }
 
                 return { processed: false };
@@ -45,19 +48,27 @@ export class SlackController {
         }
     }
 
-    @Post('/embed/confluence')
+    @Post('/command')
     @ApiOkResponse({
-        type: EmbeddingAddedResponse,
+        type: SlackCommandResponse,
     })
-    async addVideoEmbedding(@Body() body: AddConfluenceEmbeddingRequest): Promise<EmbeddingAddedResponse> {
-        return new EmbeddingAddedResponse({ ...(await this.slackService.addConfluenceEmbedding(body.spaces)) });
-    }
+    async command(
+        @Headers('x-slack-signature') slackSignature: string,
+        @Headers('x-slack-request-timestamp') slackRequestTimestamp: string,
+        @Body() body: SlackCommandRequest,
+        @Req() req: RawBodyRequest<Request>,
+    ): Promise<SlackCommandResponse> {
+        if (!(await this.slackService.isTokenValid(slackSignature, slackRequestTimestamp, req.rawBody))) {
+            throw new UnauthorizedException('Invalid Slack Token');
+        }
 
-    @Post('/query')
-    @ApiOkResponse({
-        type: ChatResponse,
-    })
-    async askQuery(@Body() body: ChatRequest): Promise<ChatResponse> {
-        return new ChatResponse({ ...(await this.slackService.askQuery(body.query, body.chatId)) });
+        switch (body.command) {
+            case '/learnfrom':
+                return new SlackCommandResponse(
+                    await this.slackService.slackLearnCommand(body.text, body.response_url),
+                );
+            default:
+                return new SlackCommandResponse('Unknown command');
+        }
     }
 }

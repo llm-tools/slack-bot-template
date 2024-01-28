@@ -1,44 +1,31 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { WebClient } from '@slack/web-api';
+import { InjectQueue } from '@nestjs/bull';
 import { nanoid } from 'nanoid';
+import { Queue } from 'bull';
 
 import { slackEncode, timingSafeEqual } from '../../utils/crypto.util.js';
-import { ConfluenceLoader, LLMApplication, LLMApplicationBuilder, SIMPLE_MODELS } from '@llm-tools/embedjs';
-import { RedisCache } from '@llm-tools/embedjs/cache/redis';
-import { LanceDb } from '@llm-tools/embedjs/vectorDb/lance';
+import { DeferredSlackEvent } from '../../types/events.js';
 import { ObjectUtils } from '../../utils/object.util.js';
+import { QueueUtil } from '../../utils/queue.util.js';
+import { LlmService } from '../llm/llm.service.js';
+import { ConfluenceLoaderCommand, WebLoaderCommand } from 'src/types/commands.js';
 
 @Injectable()
-export class SlackService implements OnModuleInit {
+export class SlackService {
     private readonly logger = new Logger(SlackService.name);
-
-    private slackClient: WebClient;
-    private llmApplication: LLMApplication;
 
     @Inject()
     private readonly configService: ConfigService;
 
-    async onModuleInit() {
-        this.llmApplication = await new LLMApplicationBuilder()
-            .setTemperature(0.1)
-            .setModel(SIMPLE_MODELS.OPENAI_GPT4)
-            .setVectorDb(
-                new LanceDb({
-                    path: '/home/adhityan/workspaces/potter-bot/docker/lmdb',
-                }),
-            )
-            .setCache(
-                new RedisCache({
-                    host: this.configService.get('REDIS_HOST'),
-                    port: this.configService.get('REDIS_PORT'),
-                    password: this.configService.get('REDIS_PASSWORD'),
-                }),
-            )
-            .build();
-
-        this.slackClient = new WebClient(this.configService.get('SLACK_BOT_TOKEN'));
-    }
+    constructor(
+        @InjectQueue(QueueUtil.QUEUE_NAMES.SLACK_MENTION_RESPONSE)
+        private readonly slackMentionResponseQueue: Queue<DeferredSlackEvent>,
+        @InjectQueue(QueueUtil.QUEUE_NAMES.CONFLUENCE_LOADER)
+        private readonly slackConfluenceLoaderQueue: Queue<ConfluenceLoaderCommand>,
+        @InjectQueue(QueueUtil.QUEUE_NAMES.WEB_LOADER)
+        private readonly slackWebLoaderQueue: Queue<WebLoaderCommand>,
+    ) {}
 
     async isTokenValid(
         slackSignature: string,
@@ -64,26 +51,30 @@ export class SlackService implements OnModuleInit {
         return timingSafeEqual(slackSignature, mySignature);
     }
 
-    async slackMention(query: string, messageThread: string, channel: string) {
-        await this.slackClient.chat.postMessage({
-            text: 'Test ' + query,
-            thread_ts: messageThread,
-            channel: channel,
-        });
+    async slackMention(query: string, messageThread: string, channel: string): Promise<string> {
+        const eventId = nanoid();
+        this.slackMentionResponseQueue.add({ eventId, query, messageThread, channel });
+        return eventId;
     }
 
-    async addConfluenceEmbedding(
-        confluenceSpaces: [string, ...string[]],
-    ): Promise<{ id: string; newEntriesAdded: number }> {
-        const { uniqueId, entriesAdded } = await this.llmApplication.addLoader(
-            new ConfluenceLoader({ spaceNames: confluenceSpaces }),
-        );
+    async slackLearnCommand(commandString: string, responseUrl: string): Promise<string> {
+        const commandParts = commandString.split(' ');
+        if (commandParts.length != 2) {
+            return 'Invalid command. Please use format `/learnfrom confluence shareddata`. Add no additional parameters';
+        }
 
-        return { id: uniqueId, newEntriesAdded: entriesAdded };
-    }
+        const command = commandParts[0];
+        const parameter = commandParts[1];
 
-    async askQuery(query: string, chatId?: string): Promise<{ response: string; chatId: string }> {
-        chatId = chatId ?? nanoid();
-        return { response: await this.llmApplication.query(query, chatId), chatId };
+        switch (command) {
+            case 'confluence':
+                this.slackConfluenceLoaderQueue.add({ space: parameter, responseUrl });
+                return `Learning from confluence space \`${parameter}\` queued`;
+            case 'web':
+                this.slackWebLoaderQueue.add({ url: parameter, responseUrl });
+                return `Learning from web url \`${parameter}\` queued`;
+            default:
+                return `Unknown loader \`${command}\``;
+        }
     }
 }

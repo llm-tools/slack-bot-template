@@ -21,28 +21,5 @@ services:
         ports:
             - 6379:6379
 
-    mariadb:
-        image: mariadb:latest
-        container_name: mariadb_fans
-        volumes:
-            - type: bind
-              source: ./db
-              target: /var/lib/mysql
-        env_file:
-            - '.env'
-        networks:
-            - backend
-        ports:
-            - 3306:3306
-
-    adminer:
-        image: adminer:latest
-        container_name: adminer
-        restart: unless-stopped
-        networks:
-            - backend
-        ports:
-            - 8090:8080
-
 networks:
     backend:

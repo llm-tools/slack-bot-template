@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bull';
 
 import { AppService } from './app.service.js';
 import { AppController } from './app.controller.js';
 import { SlackModule } from '../slack/slack.module.js';
+import { QueueUtil } from '../../utils/queue.util.js';
 
 @Module({
     imports: [
@@ -33,6 +35,11 @@ import { SlackModule } from '../slack/slack.module.js';
                 },
                 level: 'trace',
             },
+        }),
+        BullModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async (configService: ConfigService) => new QueueUtil(configService).initRedis(),
         }),
     ],
     controllers: [AppController],
