@@ -24,7 +24,7 @@ export class SlackController {
         @Req() req: RawBodyRequest<Request>,
     ): Promise<SlackEventResponse | SlackVerifyResponse> {
         if (!(await this.slackService.isTokenValid(slackSignature, slackRequestTimestamp, req.rawBody))) {
-            throw new UnauthorizedException('Invalid Slack Token');
+            throw new UnauthorizedException('Invalid Slack signature token');
         }
 
         switch (body.type) {
@@ -59,7 +59,7 @@ export class SlackController {
         @Req() req: RawBodyRequest<Request>,
     ): Promise<SlackCommandResponse> {
         if (!(await this.slackService.isTokenValid(slackSignature, slackRequestTimestamp, req.rawBody))) {
-            throw new UnauthorizedException('Invalid Slack Token');
+            throw new UnauthorizedException('Invalid Slack signature token');
         }
 
         switch (body.command) {
