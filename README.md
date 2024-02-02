@@ -8,6 +8,7 @@ This is a simple open source slack chat bot based on the [EmbedJs](https://githu
 
 ```bash
 $ docker compose up
+$ npm run start
 ```
 
-**NOTE:** This repo and documentation are still a WIP.
+**NOTE:** The documentation is still a WIP.
