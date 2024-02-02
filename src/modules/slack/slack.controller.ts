@@ -35,7 +35,7 @@ export class SlackController {
                     case 'app_mention':
                         const eventId = await this.slackService.slackMention(
                             body.event.text,
-                            body.event.thread_ts ?? body.event.ts,
+                            body.event.ts,
                             body.event.channel,
                         );
 

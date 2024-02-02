@@ -27,10 +27,19 @@ export class SlackMentionResponseWorker {
         const llmResponse = await this.llmService.askQuery(job.data.query, job.data.messageThread);
         this.logger.debug(`LLM Response obtained for slack event '${job.data.eventId}'`);
 
+        let text = llmResponse.result;
+        if (llmResponse.sources.length > 0) {
+            text += `\n\nSources:`;
+            for (let i = 0; i < llmResponse.sources.length; i++) {
+                text += `\n${i + 1}. ${llmResponse.sources[i]}`;
+            }
+        }
+
         await this.slackClient.chat.postMessage({
-            text: llmResponse.response,
-            thread_ts: job.data.messageThread,
+            text,
             channel: job.data.channel,
+            thread_ts: job.data.messageThread,
+            unfurl_links: false,
         });
 
         this.logger.debug(`Finished processing slack event '${job.data.eventId}'`);

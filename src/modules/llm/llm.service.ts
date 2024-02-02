@@ -19,7 +19,7 @@ export class LlmService implements OnModuleInit {
             .setModel(SIMPLE_MODELS.OPENAI_GPT4)
             .setVectorDb(
                 new LanceDb({
-                    path: '/home/adhityan/workspaces/potter-bot/docker/lmdb',
+                    path: './docker/lmdb',
                 }),
             )
             .setCache(
@@ -34,7 +34,6 @@ export class LlmService implements OnModuleInit {
 
     async addWebEmbedding(url: string): Promise<{ id: string; newEntriesAdded: number }> {
         const { uniqueId, entriesAdded } = await this.llmApplication.addLoader(new WebLoader({ url }));
-
         return { id: uniqueId, newEntriesAdded: entriesAdded };
     }
 
@@ -48,8 +47,9 @@ export class LlmService implements OnModuleInit {
         return { id: uniqueId, newEntriesAdded: entriesAdded };
     }
 
-    async askQuery(query: string, chatId?: string): Promise<{ response: string; chatId: string }> {
+    async askQuery(query: string, chatId?: string): Promise<{ chatId: string; result: string; sources: string[] }> {
         chatId = chatId ?? nanoid();
-        return { response: await this.llmApplication.query(query, chatId), chatId };
+        const response = await this.llmApplication.query(query, chatId);
+        return { chatId, result: response.result, sources: response.sources };
     }
 }
