@@ -30,7 +30,7 @@ export class SlackConfluenceLoaderWorker {
                 newEntriesAdded += llmResponse.newEntriesAdded;
                 slackMessage += `\`${space}\`, `;
             } catch (e) {
-                this.logger.error(`Error adding confluence space '${space}'`, e);
+                this.logger.error(`Error adding confluence space '${space}' ${e}`);
             }
         }
 
