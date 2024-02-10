@@ -2,19 +2,19 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 
-import { ConfluenceLoader, LLMApplication, LLMApplicationBuilder, SIMPLE_MODELS, WebLoader } from '@llm-tools/embedjs';
+import { ConfluenceLoader, RAGApplication, RAGApplicationBuilder, SIMPLE_MODELS, WebLoader } from '@llm-tools/embedjs';
 import { RedisCache } from '@llm-tools/embedjs/cache/redis';
 import { LanceDb } from '@llm-tools/embedjs/vectorDb/lance';
 
 @Injectable()
 export class LlmService implements OnModuleInit {
-    private llmApplication: LLMApplication;
+    private ragApplication: RAGApplication;
 
     @Inject()
     private readonly configService: ConfigService;
 
     async onModuleInit() {
-        this.llmApplication = await new LLMApplicationBuilder()
+        this.ragApplication = await new RAGApplicationBuilder()
             .setTemperature(0.1)
             .setModel(SIMPLE_MODELS.OPENAI_GPT4)
             .setVectorDb(
@@ -33,14 +33,14 @@ export class LlmService implements OnModuleInit {
     }
 
     async addWebEmbedding(url: string): Promise<{ id: string; newEntriesAdded: number }> {
-        const { uniqueId, entriesAdded } = await this.llmApplication.addLoader(new WebLoader({ url }));
+        const { uniqueId, entriesAdded } = await this.ragApplication.addLoader(new WebLoader({ url }));
         return { id: uniqueId, newEntriesAdded: entriesAdded };
     }
 
     async addConfluenceEmbedding(
         confluenceSpaces: [string, ...string[]],
     ): Promise<{ id: string; newEntriesAdded: number }> {
-        const { uniqueId, entriesAdded } = await this.llmApplication.addLoader(
+        const { uniqueId, entriesAdded } = await this.ragApplication.addLoader(
             new ConfluenceLoader({ spaceNames: confluenceSpaces }),
         );
 
@@ -49,7 +49,7 @@ export class LlmService implements OnModuleInit {
 
     async askQuery(query: string, chatId?: string): Promise<{ chatId: string; result: string; sources: string[] }> {
         chatId = chatId ?? nanoid();
-        const response = await this.llmApplication.query(query, chatId);
+        const response = await this.ragApplication.query(query, chatId);
         return { chatId, result: response.result, sources: response.sources };
     }
 }
