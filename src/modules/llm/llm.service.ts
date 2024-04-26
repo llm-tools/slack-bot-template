@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 
 import { ConfluenceLoader, RAGApplication, RAGApplicationBuilder, SIMPLE_MODELS, WebLoader } from '@llm-tools/embedjs';
 import { RedisCache } from '@llm-tools/embedjs/cache/redis';
-import { LanceDb } from '@llm-tools/embedjs/vectorDb/lance';
+import { HNSWDb } from '@llm-tools/embedjs/vectorDb/hnswlib';
 
 @Injectable()
 export class LlmService implements OnModuleInit {
@@ -17,11 +17,12 @@ export class LlmService implements OnModuleInit {
         this.ragApplication = await new RAGApplicationBuilder()
             .setTemperature(0.1)
             .setModel(SIMPLE_MODELS.OPENAI_GPT4)
-            .setVectorDb(
-                new LanceDb({
-                    path: './docker/lmdb',
-                }),
-            )
+            // .setVectorDb(
+            //     new LanceDb({
+            //         path: './docker/lmdb',
+            //     }),
+            // )
+            .setVectorDb(new HNSWDb())
             .setCache(
                 new RedisCache({
                     host: this.configService.get('REDIS_HOST'),
