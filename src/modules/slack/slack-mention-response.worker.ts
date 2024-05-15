@@ -24,24 +24,58 @@ export class SlackMentionResponseWorker {
     async process(job: Job<DeferredSlackEvent>): Promise<any> {
         this.logger.debug(`Processing slack event '${job.data.eventId}'`);
 
-        const llmResponse = await this.llmService.askQuery(job.data.query, job.data.messageThread);
-        this.logger.debug(`LLM Response obtained for slack event '${job.data.eventId}'`);
+        try {
+            const llmResponse = await this.llmService.askQuery(job.data.query, job.data.messageThread);
+            this.logger.debug(`LLM Response obtained for slack event '${job.data.eventId}'`);
 
-        let text = llmResponse.result;
-        if (llmResponse.sources.length > 0) {
-            text += `\n\nSources:`;
-            for (let i = 0; i < llmResponse.sources.length; i++) {
-                text += `\n${i + 1}. ${llmResponse.sources[i]}`;
+            const blocks: any[] = [
+                {
+                    type: 'section',
+                    text: {
+                        type: 'plain_text',
+                        text: llmResponse.result,
+                        emoji: true,
+                    },
+                },
+            ];
+
+            if (llmResponse.sources.length > 0) {
+                blocks.push({
+                    type: 'divider',
+                });
+
+                let sources = '*Sources*:';
+                for (let i = 0; i < llmResponse.sources.length; i++) {
+                    sources += `\n${i + 1}. ${llmResponse.sources[i]}`;
+                }
+
+                blocks.push({
+                    type: 'context',
+                    elements: [
+                        {
+                            type: 'mrkdwn',
+                            text: sources,
+                        },
+                    ],
+                });
             }
+
+            await this.slackClient.chat.postMessage({
+                blocks,
+                text: llmResponse.result,
+                channel: job.data.channel,
+                thread_ts: job.data.messageThread,
+                unfurl_links: false,
+            });
+
+            this.logger.debug(`Finished processing slack event '${job.data.eventId}'`);
+        } catch (e) {
+            this.logger.error(`Error from LLM - ${e}`);
+            await this.slackClient.chat.postMessage({
+                text: 'Sorry, the LLM did not respond correctly. Check with the admin if everything is alright!',
+                channel: job.data.channel,
+                thread_ts: job.data.messageThread,
+            });
         }
-
-        await this.slackClient.chat.postMessage({
-            text,
-            channel: job.data.channel,
-            thread_ts: job.data.messageThread,
-            unfurl_links: false,
-        });
-
-        this.logger.debug(`Finished processing slack event '${job.data.eventId}'`);
     }
 }

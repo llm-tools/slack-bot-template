@@ -2,9 +2,16 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 
-import { ConfluenceLoader, RAGApplication, RAGApplicationBuilder, SIMPLE_MODELS, WebLoader } from '@llm-tools/embedjs';
+import {
+    ConfluenceLoader,
+    OpenAi3SmallEmbeddings,
+    RAGApplication,
+    RAGApplicationBuilder,
+    SIMPLE_MODELS,
+    WebLoader,
+} from '@llm-tools/embedjs';
 import { RedisCache } from '@llm-tools/embedjs/cache/redis';
-import { HNSWDb } from '@llm-tools/embedjs/vectorDb/hnswlib';
+import { LanceDb } from '@llm-tools/embedjs/vectorDb/lance';
 
 @Injectable()
 export class LlmService implements OnModuleInit {
@@ -17,12 +24,12 @@ export class LlmService implements OnModuleInit {
         this.ragApplication = await new RAGApplicationBuilder()
             .setTemperature(0.1)
             .setModel(SIMPLE_MODELS.OPENAI_GPT4)
-            // .setVectorDb(
-            //     new LanceDb({
-            //         path: './docker/lmdb',
-            //     }),
-            // )
-            .setVectorDb(new HNSWDb())
+            .setEmbeddingModel(new OpenAi3SmallEmbeddings())
+            .setVectorDb(
+                new LanceDb({
+                    path: './docker/lmdb',
+                }),
+            )
             .setCache(
                 new RedisCache({
                     host: this.configService.get('REDIS_HOST'),
