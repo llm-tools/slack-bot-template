@@ -23,8 +23,9 @@ export class LlmService implements OnModuleInit {
     async onModuleInit() {
         this.ragApplication = await new RAGApplicationBuilder()
             .setTemperature(0.1)
-            .setModel(SIMPLE_MODELS.OPENAI_GPT4)
+            .setModel(SIMPLE_MODELS.OPENAI_GPT4_O)
             .setEmbeddingModel(new OpenAi3SmallEmbeddings())
+            .setEmbeddingRelevanceCutOff(0.23)
             .setVectorDb(
                 new LanceDb({
                     path: './docker/lmdb',
