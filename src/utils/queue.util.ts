@@ -7,7 +7,7 @@ export class QueueUtil {
     public static QUEUE_NAMES = {
         SLACK_MENTION_RESPONSE: 'slack_mention_response',
         CONFLUENCE_LOADER: 'confluence_loader',
-        WEB_LOADER: 'web_loader',
+        URL_LOADER: 'web_loader',
     };
 
     constructor(private configService: ConfigService) {}

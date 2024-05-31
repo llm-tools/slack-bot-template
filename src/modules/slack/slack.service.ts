@@ -4,12 +4,11 @@ import { InjectQueue } from '@nestjs/bull';
 import { nanoid } from 'nanoid';
 import { Queue } from 'bull';
 
+import { ConfluenceLoaderCommand, WebLoaderCommand as UrlLoaderCommand } from 'src/types/commands.js';
 import { slackEncode, timingSafeEqual } from '../../utils/crypto.util.js';
 import { DeferredSlackEvent } from '../../types/events.js';
 import { ObjectUtils } from '../../utils/object.util.js';
 import { QueueUtil } from '../../utils/queue.util.js';
-import { LlmService } from '../llm/llm.service.js';
-import { ConfluenceLoaderCommand, WebLoaderCommand } from 'src/types/commands.js';
 
 @Injectable()
 export class SlackService {
@@ -23,8 +22,8 @@ export class SlackService {
         private readonly slackMentionResponseQueue: Queue<DeferredSlackEvent>,
         @InjectQueue(QueueUtil.QUEUE_NAMES.CONFLUENCE_LOADER)
         private readonly slackConfluenceLoaderQueue: Queue<ConfluenceLoaderCommand>,
-        @InjectQueue(QueueUtil.QUEUE_NAMES.WEB_LOADER)
-        private readonly slackWebLoaderQueue: Queue<WebLoaderCommand>,
+        @InjectQueue(QueueUtil.QUEUE_NAMES.URL_LOADER)
+        private readonly slackUrlLoaderQueue: Queue<UrlLoaderCommand>,
     ) {}
 
     async isTokenValid(
@@ -71,8 +70,8 @@ export class SlackService {
                 const spaces = parameter.split(',');
                 this.slackConfluenceLoaderQueue.add({ spaces, responseUrl });
                 return `Learning from confluence spaces queued`;
-            case 'web':
-                this.slackWebLoaderQueue.add({ url: parameter, responseUrl });
+            case 'url':
+                this.slackUrlLoaderQueue.add({ url: parameter, responseUrl });
                 return `Learning from web url queued`;
             default:
                 return `Unknown loader \`${command}\``;

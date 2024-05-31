@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 
 import {
-    ConfluenceLoader,
     OpenAi3SmallEmbeddings,
     RAGApplication,
     RAGApplicationBuilder,
@@ -41,17 +40,18 @@ export class LlmService implements OnModuleInit {
             .build();
     }
 
-    async addWebEmbedding(url: string): Promise<{ id: string; newEntriesAdded: number }> {
-        const { uniqueId, entriesAdded } = await this.ragApplication.addLoader(new WebLoader({ url }));
-        return { id: uniqueId, newEntriesAdded: entriesAdded };
+    async addWebEmbedding(url: string): Promise<{ id: string; newEntriesAdded: number; loaderType: string }> {
+        const { uniqueId, entriesAdded, loaderType } = await this.ragApplication.addLoader(url);
+        return { id: uniqueId, newEntriesAdded: entriesAdded, loaderType };
     }
 
     async addConfluenceEmbedding(
         confluenceSpaces: [string, ...string[]],
     ): Promise<{ id: string; newEntriesAdded: number }> {
-        const { uniqueId, entriesAdded } = await this.ragApplication.addLoader(
-            new ConfluenceLoader({ spaceNames: confluenceSpaces }),
-        );
+        const { uniqueId, entriesAdded } = await this.ragApplication.addLoader({
+            type: 'Confluence',
+            spaceNames: confluenceSpaces,
+        });
 
         return { id: uniqueId, newEntriesAdded: entriesAdded };
     }
