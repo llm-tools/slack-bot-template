@@ -2,13 +2,7 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 
-import {
-    OpenAi3SmallEmbeddings,
-    RAGApplication,
-    RAGApplicationBuilder,
-    SIMPLE_MODELS,
-    WebLoader,
-} from '@llm-tools/embedjs';
+import { OpenAi3SmallEmbeddings, RAGApplication, RAGApplicationBuilder, SIMPLE_MODELS } from '@llm-tools/embedjs';
 import { RedisCache } from '@llm-tools/embedjs/cache/redis';
 import { LanceDb } from '@llm-tools/embedjs/vectorDb/lance';
 

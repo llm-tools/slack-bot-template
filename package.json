@@ -21,7 +21,7 @@
         "test:e2e": "jest --config ./test/jest-e2e.json"
     },
     "dependencies": {
-        "@llm-tools/embedjs": "0.0.81",
+        "@llm-tools/embedjs": "0.0.82",
         "@nestjs/bull": "^10.1.1",
         "@nestjs/common": "^10.3.8",
         "@nestjs/config": "^3.2.2",
