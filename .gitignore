@@ -248,6 +248,7 @@ acme.json
 temp/
 cache/
 lmdb/
+mongo/
 
 #devpod
 .devpod-internal/
