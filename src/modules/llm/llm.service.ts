@@ -53,6 +53,6 @@ export class LlmService implements OnModuleInit {
     async askQuery(query: string, chatId?: string): Promise<{ chatId: string; result: string; sources: string[] }> {
         chatId = chatId ?? nanoid();
         const response = await this.ragApplication.query(query, chatId);
-        return { chatId, result: response.result, sources: response.sources };
+        return { chatId, result: response.content, sources: response.sources.map((s) => s.source) };
     }
 }
