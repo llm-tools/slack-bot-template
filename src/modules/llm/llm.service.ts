@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 
@@ -8,6 +8,7 @@ import { LanceDb } from '@llm-tools/embedjs/vectorDb/lance';
 
 @Injectable()
 export class LlmService implements OnModuleInit {
+    private readonly logger = new Logger(LlmService.name);
     private ragApplication: RAGApplication;
 
     @Inject()
@@ -53,6 +54,8 @@ export class LlmService implements OnModuleInit {
     async askQuery(query: string, chatId?: string): Promise<{ chatId: string; result: string; sources: string[] }> {
         chatId = chatId ?? nanoid();
         const response = await this.ragApplication.query(query, chatId);
+
+        this.logger.debug('LLM response: ' + JSON.stringify(response));
         return { chatId, result: response.content, sources: response.sources.map((s) => s.source) };
     }
 }
