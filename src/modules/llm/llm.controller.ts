@@ -25,6 +25,6 @@ export class LlmController {
         type: ChatResponse,
     })
     async askQuery(@Body() body: ChatRequest): Promise<ChatResponse> {
-        return new ChatResponse({ ...(await this.llmService.askQuery(body.query, body.chatId)) });
+        return new ChatResponse({ ...(await this.llmService.askQuery(body.query, body.conversationId)) });
     }
 }

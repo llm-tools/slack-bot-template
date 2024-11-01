@@ -10,5 +10,5 @@ export class ChatRequest {
     @IsString()
     @IsOptional()
     @ApiProperty()
-    chatId?: string;
+    conversationId?: string;
 }

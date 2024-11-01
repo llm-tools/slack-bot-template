@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ChatResponse {
     @ApiProperty()
-    chatId: string;
+    conversationId: string;
 
     @ApiProperty()
     result: string;
@@ -10,8 +10,8 @@ export class ChatResponse {
     @ApiProperty()
     sources: string[];
 
-    constructor({ result, chatId, sources }: { result: string; chatId: string; sources: string[] }) {
-        this.chatId = chatId;
+    constructor({ result, conversationId, sources }: { result: string; conversationId: string; sources: string[] }) {
+        this.conversationId = conversationId;
         this.result = result;
         this.sources = sources;
     }
